@@ -15,8 +15,6 @@ def minimization(f, a, b):
     while F(n) <= (b - a) / delta:
         n += 1
 
-    n -= 2
-
     x1 = a + (F(n - 2) / F(n)) * (b - a)
     x2 = a + (F(n - 1) / F(n)) * (b - a)
     f1 = f(x1)
