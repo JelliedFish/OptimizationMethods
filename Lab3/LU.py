@@ -1,5 +1,5 @@
 import numpy as np
-
+import random
 
 def full(N):
     m = np.zeros((N, N))
@@ -7,6 +7,11 @@ def full(N):
         m[i] = [int(var) for var in input().split()]
     return m
 
+def full_pt_3(N):
+    m = [[random.randint(-4, 0) for i in range(N)] for j in range(N)]
+    for i in range(N):
+        m[i][i] = -sum(m[i][:i] + m[i][i+1:])
+    return np.array(m)
 
 class Matrix(object):
 
@@ -15,7 +20,7 @@ class Matrix(object):
         self.data = []
         self.indexes = []
         self.indptr = [1]
-        self.LU = np.zeros((n, n))
+        self.LU = np.zeros([n, n])
 
     def csr_matrix_in(self, matrix):
         for i in range(self.N):
@@ -44,39 +49,69 @@ class Matrix(object):
     def decompose_to_LU(self):
         n = self.N
 
-        lu_matrix = np.zeros((n, n))
+        lu_matrix = np.zeros([n, n])
 
         for k in range(n):
+
             # calculate all residual k-row elements
             for j in range(k, n):
-
                 if k > 0:
-                    lu_matrix[k, j] = self.get_ij(k, j) - lu_matrix[k, : k] * lu_matrix[: k, j]
+                    lu_matrix[k, j] = self.get_ij(k, j) - np.dot(lu_matrix[k, : k], lu_matrix[: k, j])
                 else:
-                    lu_matrix[k, j] = self.get_ij(k, j) - lu_matrix[k,k] * lu_matrix[k, j]
+                    lu_matrix[k, j] = self.get_ij(k, j) - lu_matrix[k, k] * lu_matrix[k, j]
+
+            # check if matrix is degenerate
+            if lu_matrix[k, k] == 0:
+                return -1
 
             # calculate all residual k-column elemetns
             for i in range(k + 1, n):
                 if k > 0:
-                    lu_matrix[i, k] = (self.get_ij(i, k) - lu_matrix[i, : k] * lu_matrix[: k, k]) / lu_matrix[k, k]
+                    lu_matrix[i, k] = (self.get_ij(i, k) - np.dot(lu_matrix[i, : k], lu_matrix[: k, k])) / lu_matrix[k, k]
                 else:
-                    lu_matrix[i, k] = (self.get_ij(i, k) - lu_matrix[i,k] * lu_matrix[k, k]) / lu_matrix[k, k]
+                    lu_matrix[i, k] = (self.get_ij(i, k) - lu_matrix[i, k] * lu_matrix[k, k]) / lu_matrix[k, k]
+
         self.LU = lu_matrix
 
+        return 0
+
+    def solve_LU(self, b):
+
+        # get supporting vector y
+        y = np.zeros([self.LU.shape[0], 1])
+
+        for i in range(y.shape[0]):
+            y[i, 0] = b[i, 0] - np.dot(self.LU[i, :i], y[:i])
+
+        # get vector of answers x
+        x = np.zeros([self.LU.shape[0], 1])
+
+        for i in range(1, x.shape[0] + 1):
+            x[-i, 0] = (y[-i] - np.dot(self.LU[-i, -i:], x[-i:, 0])) / self.LU[-i, -i]
+
+        return x
+
+    def get_inversed(self):
+        inversed = None
+        for i in range(self.LU.shape[0]):
+           b = np.zeros([self.LU.shape[0], 1])
+           b[i, 0] = 1
+           column = self.solve_LU(b)
+           if inversed is None:
+               inversed = column
+           else:
+               inversed = np.append(inversed, column, axis=1)
+        return inversed
+
     def get_ij(self, index_i, index_j):
-
-        for i in range(1, len(self.indptr)):
-            for j in range(self.indptr[i] - self.indptr[i - 1]):
-
-                for k in range(self.indexes[self.indptr[i - 1] - 1 + j - 1] + 1
-                               if self.indptr[i - 1] - 1 + j - 1 >= 0
-                               else 0,
-                               self.indexes[self.indptr[i - 1] - 1 + j]):
-                    if i == index_i and k == index_j: #Поправить k == index-j
-                        return 0
-
-                if i == index_i and self.indexes[self.indptr[i - 1] - 1 + j] == index_j:
-                    return int(self.data[self.indptr[i - 1] - 1 + j])
+        answer = 0
+        row_length = self.indptr[index_i+1] - self.indptr[index_i]
+        first_row_index = self.indptr[index_i] - 1
+        last_row_index = self.indptr[index_i] - 1 + row_length
+        for k in range(first_row_index, last_row_index):
+            if self.indexes[k] == index_j:
+                answer = self.data[k]
+        return answer
 
     def csr_matrix_out(self):
 
@@ -96,5 +131,16 @@ class Matrix(object):
 a = Matrix(4)
 matrix = full(4)
 a.csr_matrix_in(matrix)
-a.decompose_to_LU()
-print(a.get_L()*a.get_U())
+flag = a.decompose_to_LU()
+if flag == -1:
+    print("This matrix is degenerate.")
+else:
+    print(a.get_L())
+    print(a.get_U())
+    print(a.get_L() * a.get_U())
+    inversed = a.get_inversed()
+    print(inversed)
+    print(matrix.dot(inversed))
+
+matrix_pt_3 = full_pt_3(4)
+print(matrix_pt_3)
