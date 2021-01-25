@@ -10,11 +10,9 @@ def full(N):
     return m
 
 def full_pt_3(K):
-    m = [[random.randint(-4, 0) for i in range(K)] for j in range(K)]
+    m = [[random.randint(-4, 0) + (math.pow(10, -K) if random.choice([True, False]) else 0) for i in range(K)] for j in range(K)]
     for i in range(K):
         m[i][i] = -sum(m[i][:i] + m[i][i+1:])
-        if random.choice([True, False]):
-            m[i][i] += math.pow(10, -K)
     return np.array(m)
 
 
@@ -171,8 +169,18 @@ else:
     print(inversed)
     print(matrix.dot(inversed))
 
-# matrix_pt_3 = full_pt_3(4)
-# print(matrix_pt_3)
+a_pt_3 = Matrix(4)
+matrix_pt_3 = full_pt_3(4)
+print(matrix_pt_3)
+a_pt_3.csr_matrix_in(matrix_pt_3)
+flag = a_pt_3.decompose_to_LU()
+if flag == -1:
+    print("This matrix is degenerate.")
+else:
+    F = a_pt_3.getF(matrix_pt_3)
+    X_new = a_pt_3.solve_LU(F)
+    print(a_pt_3.erRate(X_new))
+    print(a_pt_3.numRate(matrix_pt_3))
 
 a_gilbert = Matrix(10)
 matrix_gilbert = full_Gilbert(10)
