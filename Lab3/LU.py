@@ -58,6 +58,9 @@ class Matrix(object):
             self.X[i] = self.X[i] - X_new[i]
         return np.linalg.norm(self.X)
 
+    def numRate(self, A):
+        return np.linalg.norm(A)*np.linalg.norm(self.get_inversed())
+
     def getF(self, matrix):
         for i in range(self.N):
             self.X[i, 0] = i + 1
@@ -179,3 +182,4 @@ else:
     F = a_gilbert.getF(matrix_gilbert)
     X_new = a_gilbert.solve_LU(F)
     print(a_gilbert.erRate(X_new))
+    print(a_gilbert.numRate(matrix_gilbert))
