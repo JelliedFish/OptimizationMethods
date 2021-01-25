@@ -2,6 +2,7 @@ import numpy as np
 import random
 import math
 
+
 def full(N):
     m = np.zeros((N, N))
     for i in range(N):
@@ -16,6 +17,16 @@ def full_pt_3(K):
             m[i][i] += math.pow(10, -K)
     return np.array(m)
 
+
+def full_Gilbert(N):
+    matrix = np.zeros([N, N])
+
+    for i in range(N):
+        for j in range(N):
+            matrix[i][j] = 1 / ((i + 1) + (j + 1) - 1)
+    return matrix
+
+
 class Matrix(object):
 
     def __init__(self, n):
@@ -24,6 +35,7 @@ class Matrix(object):
         self.indexes = []
         self.indptr = [1]
         self.LU = np.zeros([n, n])
+        self.X = np.zeros([n, 1])
 
     def csr_matrix_in(self, matrix):
         for i in range(self.N):
@@ -43,6 +55,19 @@ class Matrix(object):
             L[i, i + 1:] = 0
         return np.matrix(L)
 
+    def erRate(self, X_new):
+        for i in range(self.N):
+            self.X[i] = self.X[i] - X_new[i]
+        return np.linalg.norm(self.X)
+
+    def numRate(self, A):
+        return np.linalg.norm(A)*np.linalg.norm(self.get_inversed())
+
+    def getF(self, matrix):
+        for i in range(self.N):
+            self.X[i, 0] = i + 1
+        return np.dot(matrix, self.X)
+
     def get_U(self):
         U = self.LU.copy()
         for i in range(1, U.shape[0]):
@@ -59,18 +84,19 @@ class Matrix(object):
             # calculate all residual k-row elements
             for j in range(k, n):
                 if k > 0:
-                    lu_matrix[k, j] = self.get_ij(k, j) - np.dot(lu_matrix[k, : k], lu_matrix[: k, j])
+                    lu_matrix[k, j] = float(self.get_ij(k, j) - np.dot(lu_matrix[k, : k], lu_matrix[: k, j]))
                 else:
-                    lu_matrix[k, j] = self.get_ij(k, j) - lu_matrix[k, k] * lu_matrix[k, j]
+                    lu_matrix[k, j] = float(self.get_ij(k, j) - lu_matrix[k, k] * lu_matrix[k, j])
 
             # check if matrix is degenerate
-            if lu_matrix[k, k] == 0:
+            if float(lu_matrix[k, k]) == 0:
                 return -1
 
             # calculate all residual k-column elemetns
             for i in range(k + 1, n):
                 if k > 0:
-                    lu_matrix[i, k] = (self.get_ij(i, k) - np.dot(lu_matrix[i, : k], lu_matrix[: k, k])) / lu_matrix[k, k]
+                    lu_matrix[i, k] = (self.get_ij(i, k) - np.dot(lu_matrix[i, : k], lu_matrix[: k, k])) / lu_matrix[
+                        k, k]
                 else:
                     lu_matrix[i, k] = (self.get_ij(i, k) - lu_matrix[i, k] * lu_matrix[k, k]) / lu_matrix[k, k]
 
@@ -97,18 +123,18 @@ class Matrix(object):
     def get_inversed(self):
         inversed = None
         for i in range(self.LU.shape[0]):
-           b = np.zeros([self.LU.shape[0], 1])
-           b[i, 0] = 1
-           column = self.solve_LU(b)
-           if inversed is None:
-               inversed = column
-           else:
-               inversed = np.append(inversed, column, axis=1)
+            b = np.zeros([self.LU.shape[0], 1])
+            b[i, 0] = 1
+            column = self.solve_LU(b)
+            if inversed is None:
+                inversed = column
+            else:
+                inversed = np.append(inversed, column, axis=1)
         return inversed
 
     def get_ij(self, index_i, index_j):
         answer = 0
-        row_length = self.indptr[index_i+1] - self.indptr[index_i]
+        row_length = self.indptr[index_i + 1] - self.indptr[index_i]
         first_row_index = self.indptr[index_i] - 1
         last_row_index = self.indptr[index_i] - 1 + row_length
         for k in range(first_row_index, last_row_index):
@@ -145,5 +171,17 @@ else:
     print(inversed)
     print(matrix.dot(inversed))
 
-matrix_pt_3 = full_pt_3(4)
-print(matrix_pt_3)
+# matrix_pt_3 = full_pt_3(4)
+# print(matrix_pt_3)
+
+a_gilbert = Matrix(10)
+matrix_gilbert = full_Gilbert(10)
+a_gilbert.csr_matrix_in(matrix_gilbert)
+flag = a_gilbert.decompose_to_LU()
+if flag == -1:
+    print("This matrix is degenerate.")
+else:
+    F = a_gilbert.getF(matrix_gilbert)
+    X_new = a_gilbert.solve_LU(F)
+    print(a_gilbert.erRate(X_new))
+    print(a_gilbert.numRate(matrix_gilbert))
