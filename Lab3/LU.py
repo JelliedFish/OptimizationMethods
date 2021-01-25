@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import math
 
 def full(N):
     m = np.zeros((N, N))
@@ -7,10 +8,12 @@ def full(N):
         m[i] = [int(var) for var in input().split()]
     return m
 
-def full_pt_3(N):
-    m = [[random.randint(-4, 0) for i in range(N)] for j in range(N)]
-    for i in range(N):
+def full_pt_3(K):
+    m = [[random.randint(-4, 0) for i in range(K)] for j in range(K)]
+    for i in range(K):
         m[i][i] = -sum(m[i][:i] + m[i][i+1:])
+        if random.choice([True, False]):
+            m[i][i] += math.pow(10, -K)
     return np.array(m)
 
 class Matrix(object):
